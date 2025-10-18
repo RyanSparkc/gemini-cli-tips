@@ -763,3 +763,23 @@ There’s an **open ecosystem** around extensions. Google has an official Extens
 To manage extensions, besides the install command, you can update or remove them via similar CLI commands (gemini extensions update or just by removing the folder). It’s wise to occasionally check for updates on extensions you use, as they may receive improvements. The CLI might introduce an “extensions marketplace” style interface in the future, but for now, exploring the GitHub repositories and official catalog is the way to discover new ones. Some popular ones at launch include the GenAI **Genkit** extension (for building generative AI apps), and a variety of Google Cloud extensions that cover CI/CD, database admin, and more.
 
 **Pro Tip:** If you’re building your own extension, start by looking at existing ones for examples. The official documentation provides an **Extensions Guide** with the schema and [capabilities](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Extensions). A simple way to create a private extension is to use the @include functionality in GEMINI.md to inject scripts or context, but a full extension gives you more power (like packaging tools). Also, since extensions can include context files, you can use them to preload domain knowledge. Imagine an extension for your company’s internal API that includes a summary of the API and a tool to call it – the AI would then know how to handle requests related to that API. In short, extensions open up a new world where Gemini CLI can interface with anything. Keep an eye on the extensions marketplace for new additions, and don’t hesitate to share any useful extension you create with the community – you might just help thousands of other [developers](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=Gemini%20CLI%20extensions%20are%20here,and%20build%20your%20own%20extension).
+
+## Additional Fun: Corgi Mode Easter Egg 🐕
+
+Lastly, not a productivity tip but a delightful easter egg – try the command \*/corgi\* in Gemini CLI. This toggles **“corgi mode”**, which makes a cute corgi animation run across your [terminal](https://medium.com/@ferreradaniel/gemini-cli-free-ai-tool-upgrade-5-new-features-you-need-right-now-04cfefac5e93#:~:text=Easter%20Egg%3A%20Corgi%20Mode%20in,Gemini%20CLI)\! It doesn’t help you code any better, but it can certainly lighten the mood during a long coding session. You’ll see an ASCII art corgi dashing in the CLI interface. To turn it off, just run /corgi again.
+
+This is a purely for-fun feature the team added (and yes, there’s even a tongue-in-cheek [debate](https://github.com/google-gemini/gemini-cli/issues/5674#:~:text=How%20about%20you%20NOT%20implement,this%20needed%3F%20Because%20people) about spending dev time on corgi mode). It shows that the creators hide some whimsy in the tool. So when you need a quick break or a smile, give /corgi a try. 🐕🎉
+
+*(Rumor has it there might be other easter eggs or modes – who knows? Perhaps a “/partyparrot” or similar. The cheat sheet or help command lists /corgi, so it’s not a secret, just underused. Now you’re in on the joke\!)*
+
+---
+
+**Conclusion:**
+
+We’ve covered a comprehensive list of pro tips and features for Gemini CLI. From setting up persistent context with GEMINI.md, to writing custom commands and using advanced tools like MCP servers, to leveraging multi-modal inputs and automating workflows, there’s a lot this AI command-line assistant can do. As an external developer, you can integrate Gemini CLI into your daily routine – it’s like a powerful ally in your terminal that can handle tedious tasks, provide insights, and even troubleshoot your environment.
+
+Gemini CLI is evolving rapidly (being open-source with community contributions), so new features and improvements are constantly on the horizon. By mastering the pro tips in this guide, you’ll be well-positioned to harness the full potential of this tool. It’s not just about using an AI model – it’s about integrating AI deeply into how you develop and manage software.
+
+Happy coding with Gemini CLI, and have fun exploring just how far your “AI agent in the terminal” can take you.
+
+**You now have a Swiss-army knife of AI at your fingertips – use it wisely, and it will make you a more productive (and perhaps happier) developer**!
