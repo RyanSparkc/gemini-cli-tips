@@ -447,13 +447,13 @@ In summary, **Headless Mode** enables automation. It's the bridge between Gemini
 
 Gemini CLI essentially has a built-in chat session manager. The commands to know are:
 
-* \*/chat save \<tag\>\* - Saves the current conversation state under a tag/name you [provide](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands). The tag is like a filename or key for that session. Save often if you want, it will overwrite the tag if it exists. (Using a descriptive name is helpful - e.g., chat save fix-docker-issue.)
+* `/chat save <tag>` - Saves the current conversation state under a tag/name you [provide](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands). The tag is like a filename or key for that session. Save often if you want, it will overwrite the tag if it exists. (Using a descriptive name is helpful - e.g., chat save fix-docker-issue.)
 
-* \*/chat list\* - Lists all your saved sessions (the tags you've [used](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands). This helps you remember what you named previous saves.
+* `/chat list` - Lists all your saved sessions (the tags you've [used](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands). This helps you remember what you named previous saves.
 
-* \*/chat resume \<tag\>\* - Resumes the session with that tag, restoring the entire conversation context and history to how it was when [saved](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands). It's like you never left. You can then continue chatting from that point.
+* `/chat resume <tag>` - Resumes the session with that tag, restoring the entire conversation context and history to how it was when [saved](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands). It's like you never left. You can then continue chatting from that point.
 
-* \*/chat share\* \- (saves to file) This is useful as you can share the entire chat with someone else who can continue the session. Almost collaboration-like.
+* `/chat share` - (saves to file) This is useful as you can share the entire chat with someone else who can continue the session. Almost collaboration-like.
 
 Under the hood, these sessions are stored likely in \~/.gemini/chats/ or a similar location. They include the conversation messages and any relevant state. This feature is super useful for cases such as:
 
