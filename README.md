@@ -65,3 +65,67 @@ This will display the full combined context the AI [sees](https://www.philschmid
 
 With a well-crafted GEMINI.md, you essentially give Gemini CLI a “memory” of the project’s requirements and conventions. This **persistent context** leads to more relevant responses and less back-and-forth prompt engineering.
 
+## Tip 2: Create Custom Slash Commands
+
+**Quick use-case:** Speed up repetitive tasks by defining your own slash commands. For example, you could make a command /test:gen that generates unit tests from a description, or /db:reset that drops and recreates a test database. This extends Gemini CLI’s functionality with one-liners tailored to your workflow.
+
+Gemini CLI supports **custom slash commands** that you can define in simple configuration files. Under the hood, these are essentially pre-defined prompt templates. To create one, make a directory commands/ under either \~/.gemini/ for global commands or in your project’s .gemini/ folder for project-specific [commands](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Custom%20Commands). Inside commands/, create a TOML file for each new command. The file name format determines the command name: e.g. a file test/gen.toml defines a command /test:gen.
+
+Let’s walk through an example. Say you want a command to generate a unit test from a requirement description. You could create \~/.gemini/commands/test/gen.toml with the following content:
+
+\# Invoked as: /test:gen "Description of the test"  
+description \= "Generates a unit test based on a requirement."  
+prompt \= """  
+You are an expert test engineer. Based on the following requirement, please write a comprehensive unit test using the Jest framework.
+
+Requirement: {{args}}  
+"""
+
+Now, after reloading or restarting Gemini CLI, you can simply type:
+
+\> /test:gen "Ensure the login button redirects to the dashboard upon success"
+
+Gemini CLI will recognize /test:gen and substitute the {{args}} in your prompt template with the provided argument (in this case, the requirement). The AI will then proceed to generate a Jest unit test [accordingly](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Example%3A%20%60). The description field is optional but is used when you run /help or /tools to list available commands.
+
+This mechanism is extremely powerful – effectively, you can script the AI with natural language. The community has created numerous useful custom commands. For instance, Google’s DevRel team shared a set of *10 practical workflow commands* (via an open-source repo) demonstrating how you can script common flows like creating API docs, cleaning data, or setting up boilerplate [code](https://cloud.google.com/blog/topics/developers-practitioners/agent-factory-recap-deep-dive-into-gemini-cli-with-taylor-mullen#:~:text=,to%20generate%20a%20better%20output). By defining a custom command, you package a complex prompt (or series of prompts) into a reusable shortcut.
+
+**Pro Tip:** Custom commands can also be used to enforce formatting or apply a “persona” to the AI for certain tasks. For example, you might have a /review:security command that always prefaces the prompt with “You are a security auditor…” to review code for vulnerabilities. This approach ensures consistency in how the AI responds to specific categories of tasks.
+
+To share commands with your team, you can commit the TOML files in your project’s repo (under .gemini/commands directory). Team members who have Gemini CLI will automatically pick up those commands when working in the project. This is a great way to **standardize AI-assisted workflows** across a team.
+
+## Tip 3: Extend Gemini with Your Own **MCP** Servers
+
+**Quick use-case:** Suppose you want Gemini to interface with an external system or a custom tool that isn’t built-in – for example, query a proprietary database, or integrate with Figma designs. You can do this by running a custom **Model Context Protocol (MCP) server** and plugging it into Gemini [CLI](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Extend%20the%20CLI%20with%20your,add%7Clist%7Cremove%3E%60%20commands). MCP servers let you add new tools and abilities to Gemini, effectively **extending the agent**.
+
+Gemini CLI comes with several MCP servers out-of-the-box (for instance, ones enabling Google Search, code execution sandboxes, etc.), and you can add your own. An MCP server is essentially an external process (it could be a local script, a microservice, or even a cloud endpoint) that speaks a simple protocol to handle tasks for Gemini. This architecture is what makes Gemini CLI so [extensible](https://blog.google/technology/developers/introducing-gemini-cli-open-source-ai-agent/#:~:text=,interactively%20within%20your%20scripts).
+
+**Examples of MCP servers:** Some community and Google-provided MCP integrations include a **Figma MCP** (to fetch design details from Figma), a **Clipboard MCP** (to read/write from your system clipboard), and others. In fact, in an internal demo, the Gemini CLI team showcased a “Google Docs MCP” server that allowed saving content directly to Google [Docs](https://cloud.google.com/blog/topics/developers-practitioners/agent-factory-recap-deep-dive-into-gemini-cli-with-taylor-mullen#:~:text=%2A%20Utilize%20the%20google,summary%20directly%20to%20Google%20Docs). The idea is that whenever Gemini needs to perform an action that the built-in tools can’t handle, it can delegate to your MCP server.
+
+**How to add one:** You can configure MCP servers via your settings.json or using the CLI. For a quick setup, try the CLI command:
+
+gemini mcp add myserver \--command "python3 my\_mcp\_server.py" \--port 8080
+
+This would register a server named “myserver” that Gemini CLI will launch by running the given command (here a Python module) on port 8080\. In \~/.gemini/settings.json, it would add an entry under mcpServers. For example:
+
+"mcpServers": {  
+  "myserver": {  
+    "command": "python3",  
+    "args": \["-m", "my\_mcp\_server", "--port", "8080"\],  
+    "cwd": "./mcp\_tools/python",  
+    "timeout": 15000  
+  }  
+}
+
+This configuration (based on the official docs) tells Gemini how to start the MCP server and [where](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Example%20). Once running, the tools provided by that server become available to Gemini CLI. You can list all MCP servers and their tools with the slash command:
+
+\> /mcp
+
+This will show any registered servers and what tool names they [expose](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Command%20Description%20,List%20active%20extensions).
+
+**Power of MCP:** MCP servers can provide **rich, multi-modal results**. For instance, a tool served via MCP could return an image or a formatted table as part of the response to Gemini [CLI](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Capabilities%3A). They also support OAuth 2.0, so you can securely connect to APIs (like Google’s APIs, GitHub, etc.) via an MCP tool without exposing [credentials](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Extend%20the%20CLI%20with%20your,add%7Clist%7Cremove%3E%60%20commands). Essentially, if you can code it, you can wrap it as an MCP tool – turning Gemini CLI into a hub that orchestrates many services.
+
+**Default vs. custom:** By default, Gemini CLI’s built-in tools cover a lot (reading files, web search, executing shell commands, etc.), but MCP lets you go beyond. Some advanced users have created MCP servers to interface with internal systems or to perform specialized data processing. For example, you could have a database-mcp that provides a /query\_db tool for running SQL queries on a company database, or a jira-mcp to create tickets via natural language.
+
+When creating your own, be mindful of security: by default, custom MCP tools require confirmation unless you mark them as trusted. You can control safety with settings like trust: true for a server (which auto-approves its tool actions) or by whitelisting specific safe tools and blacklisting dangerous [ones](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,takes%20precedence).
+
+In short, **MCP servers unlock limitless integration**. They’re a pro feature that lets Gemini CLI become a glue between your AI assistant and whatever system you need it to work with. If you’re interested in building one, check out the official [MCP guide](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Transport%20) and community examples.
