@@ -124,13 +124,13 @@ gemini mcp add myserver --command "python3 my_mcp_server.py" --port 8080
 This would register a server named "myserver" that Gemini CLI will launch by running the given command (here a Python module) on port 8080\. In \~/.gemini/settings.json, it would add an entry under mcpServers. For example:
 
 ```json
-"mcpServers": {  
-  "myserver": {  
-    "command": "python3",  
-    "args": \["-m", "my\_mcp\_server", "--port", "8080"\],  
-    "cwd": "./mcp\_tools/python",  
-    "timeout": 15000  
-  }  
+"mcpServers": {
+  "myserver": {
+    "command": "python3",
+    "args": ["-m", "my_mcp_server", "--port", "8080"],
+    "cwd": "./mcp_tools/python",
+    "timeout": 15000
+  }
 }
 ```
 
@@ -772,13 +772,13 @@ Gemini CLI is highly configurable. In your home directory (\~/.gemini/) or proje
 Inside **settings.json**, options are specified as JSON key-value pairs. Here's a snippet illustrating some useful customizations:
 
 ```json
-{  
-"theme": "GitHub",  
-"autoAccept": false,  
-"vimMode": true,  
-"sandbox": "docker",  
-"includeDirectories": \["../shared-library", "\~/common-utils"\],  
-"usageStatisticsEnabled": true  
+{
+"theme": "GitHub",
+"autoAccept": false,
+"vimMode": true,
+"sandbox": "docker",
+"includeDirectories": ["../shared-library", "~/common-utils"],
+"usageStatisticsEnabled": true
 }
 ```
 
