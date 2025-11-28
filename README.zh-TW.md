@@ -1,5 +1,7 @@
 # Gemini CLI 技巧與訣竅
 
+> **語言版本：** [English](README.md) | [繁體中文](README.zh-TW.md)
+
 **本指南涵蓋了約 30 個專業技巧，幫助你有效使用 Gemini CLI 進行智能代理式程式開發**
 
 **[Gemini CLI](https://github.com/google-gemini/gemini-cli)** 是一個開源 AI 助手，將 Google Gemini 模型的強大功能直接帶進你的[終端機](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=The%20Gemini%20CLI%20is%20an,via%20a%20Gemini%20API%20key)。它是一個具有對話能力的「代理式」命令列工具 - 意思是它能理解你的需求、選擇工具（像是執行 shell 指令或編輯檔案），並執行多步驟計畫來協助你的開發[工作流程](https://cloud.google.com/blog/topics/developers-practitioners/agent-factory-recap-deep-dive-into-gemini-cli-with-taylor-mullen#:~:text=The%20Gemini%20CLI%20%20is,understanding%20of%20the%20developer%20workflow)。
@@ -783,4 +785,135 @@ gemini -p "Analyze logs" --session-summary usage.json
 這個旗標列在更新日誌中。[Google Gemini](https://google-gemini.github.io/gemini-cli/docs/changelogs/)
 
 使用 API 金鑰或 Vertex 驗證，CLI 會自動重用先前發送的上下文，所以後來的回合發送更少的 token。保持 `GEMINI.md` 和大型檔案參考在回合之間穩定會增加快取命中率；你會在統計中看到這反映為快取的 token。
+
+## 技巧 21：使用 `/copy` 快速複製到剪貼簿
+
+**快速應用場景：** 立即將 Gemini CLI 的最新回答或程式碼片段複製到系統剪貼簿，不含任何多餘的格式或行[號](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,for%20easy%20sharing%20or%20reuse)。這非常適合快速將 AI 生成的程式碼貼入你的編輯器或與團隊成員分享結果。
+
+當 Gemini CLI 提供答案（特別是多行程式碼區塊）時，你通常想要在其他地方重複使用它。`/copy` 斜線指令透過直接將 *CLI 產生的最後輸出*複製到你的[剪貼簿](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,for%20easy%20sharing%20or%20reuse)，讓這變得毫不費力。與手動選擇不同（可能會抓到行號或提示符號文字），`/copy` 只抓取原始回應內容。例如，如果 Gemini 剛生成了一個 50 行的 Python 腳本，只需輸入 `/copy` 就會把整個腳本放入你的剪貼簿，準備貼上 - 不需要捲動和選擇文字。在底層，Gemini CLI 使用你平台適當的剪貼簿工具（例如 macOS 上的 `pbcopy`，[Windows](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,clip) 上的 `clip`）。執行指令後，你通常會看到確認訊息，然後你可以在需要的地方貼上複製的文字。
+
+**運作原理：** `/copy` 指令需要你的系統有可用的剪貼簿[工具](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,clip)。在 macOS 和 Windows 上，所需的工具（分別是 `pbcopy` 和 `clip`）通常是預先安裝的。在 Linux 上，你可能需要安裝 `xclip` 或 `xsel` 才能讓 `/copy` [運作](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,clip)。確保這點後，你可以在 Gemini CLI 印出答案後隨時使用 `/copy`。它會擷取*整個*最後回應（即使很長）並省略 CLI 可能在螢幕上顯示的任何內部編號或格式。這讓你在轉移內容時不用處理不想要的假象。這是個小功能，但在你迭代程式碼或編譯 AI 生成的報告時，它能大幅節省時間。
+
+**專業訣竅：** 如果你發現 `/copy` 指令不運作，請仔細檢查剪貼簿工具是否已安裝且可存取。例如，Ubuntu 使用者應該執行 `sudo apt install xclip` 來啟用剪貼簿[複製](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,clip)。設定完成後，`/copy` 讓你以零摩擦分享 Gemini 的輸出 - 複製、貼上，完成。
+
+## 技巧 22：掌握 `Ctrl+C` 來處理 Shell 模式與離開
+
+**快速應用場景：** 透過多功能的 **Ctrl+C** [快捷鍵](https://www.howtouselinux.com/post/the-complete-google-gemini-cli-cheat-sheet-and-guide#:~:text=Shortcut%20Description%20,Press%20twice%20to%20confirm)，用單一按鍵乾淨地中斷 Gemini CLI 或離開 shell 模式 - 並透過快速雙擊完全退出 CLI。這在你需要停止或離開時給你即時控制。
+
+Gemini CLI 像 REPL 一樣運作，知道如何跳出操作是必要的。按一次 **Ctrl+C** 會取消目前動作或清除你已開始輸入的任何內容，基本上作為「中止」[指令](https://www.howtouselinux.com/post/the-complete-google-gemini-cli-cheat-sheet-and-guide#:~:text=Shortcut%20Description%20,Press%20twice%20to%20confirm)。例如，如果 AI 正在生成冗長的答案而你已經看夠了，按 `Ctrl+C` - 生成會立即停止。如果你已經開始輸入提示詞但想丟棄它，`Ctrl+C` 會清空輸入行，讓你可以重新[開始](https://www.howtouselinux.com/post/the-complete-google-gemini-cli-cheat-sheet-and-guide#:~:text=Shortcut%20Description%20,Press%20twice%20to%20confirm)。此外，如果你在 **shell 模式**（透過輸入 `!` 來執行 shell 指令啟動），單次 `Ctrl+C` 會離開 shell 模式並讓你回到正常的 Gemini 提示符號（它發送中斷到正在[執行](https://milvus.io/ai-quick-reference/how-do-i-use-gemini-cli-for-shell-command-generation#:~:text=The%20shell%20integration%20also%20includes,where%20you%20can%20generate%20commands)的 shell 程序）。如果 shell 指令卡住或你只是想回到 AI 模式，這非常方便。
+
+連續按兩次 **Ctrl+C** 是完全退出 Gemini CLI 的[快捷鍵](https://www.howtouselinux.com/post/the-complete-google-gemini-cli-cheat-sheet-and-guide#:~:text=Shortcut%20Description%20,Press%20twice%20to%20confirm)。想成「`Ctrl+C` 取消，再按 `Ctrl+C` 退出」。這個雙擊訊號讓 CLI 終止對話階段（你會看到告別訊息或程式會關閉）。這比輸入 `/quit` 或關閉終端機視窗更快，讓你能從鍵盤優雅地關閉 CLI。請注意，如果有輸入要清除或操作要中斷，單次 `Ctrl+C` 不會退出 - 需要第二次按下（當提示符號閒置時）才能完全[離開](https://www.howtouselinux.com/post/the-complete-google-gemini-cli-cheat-sheet-and-guide#:~:text=Shortcut%20Description%20,Press%20twice%20to%20confirm)。這個設計防止在你只是想停止目前輸出時意外關閉對話階段。
+
+**專業訣竅：** 在 shell 模式中，你也可以按 **Esc** 鍵來離開 shell 模式並回到 Gemini 的對話模式，而不終止 [CLI](https://milvus.io/ai-quick-reference/how-do-i-use-gemini-cli-for-shell-command-generation#:~:text=The%20shell%20integration%20also%20includes,where%20you%20can%20generate%20commands)。如果你偏好更正式的退出，`/quit` 指令總是可用來乾淨地結束對話階段。最後，Unix 使用者可以在空提示符號處使用 **Ctrl+D**（EOF）來退出 - 如果[需要](https://www.howtouselinux.com/post/the-complete-google-gemini-cli-cheat-sheet-and-guide#:~:text=Shortcut%20Description%20,Press%20twice%20to%20confirm)，Gemini CLI 會提示確認。但對大多數情況，掌握 `Ctrl+C` 的單擊和雙擊是保持控制的最快方式。
+
+## 技巧 23：使用 `settings.json` 自訂 Gemini CLI
+
+**快速應用場景：** 透過編輯 `settings.json` 設定檔，根據你的偏好或專案慣例調整 CLI 的行為和外觀，而不是堅持使用一體適用的[預設值](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=%2A%20%60autoAccept%60%3A%20Auto,to%20disable%20usage%20statistics)。這讓你可以在所有對話階段中強制執行像主題、工具使用規則或編輯器模式等設定。
+
+Gemini CLI 高度可配置。在你的家目錄（`~/.gemini/`）或專案資料夾（你的 repo 內的 `.gemini/`）中，你可以建立 `settings.json` 檔案來覆寫預設[設定](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Customize%20the%20CLI%20by%20creating,applied%20with%20the%20following%20precedence)。這裡幾乎可以調整 CLI 的每個方面 - 從視覺主題到工具權限。CLI 會合併來自多個層級的設定：系統層級預設值、你的使用者設定，以及專案特定設定（專案設定會覆寫使用者[設定](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Customize%20the%20CLI%20by%20creating,applied%20with%20the%20following%20precedence)）。例如，你可能有深色主題的全域偏好，但特定專案可能需要更嚴格的工具沙盒化；你可以透過每個層級不同的 `settings.json` 檔案來處理。
+
+在 `settings.json` 內，選項以 JSON 鍵值對指定。以下是說明一些有用自訂的片段：
+
+```json
+{
+"theme": "GitHub",
+"autoAccept": false,
+"vimMode": true,
+"sandbox": "docker",
+"includeDirectories": ["../shared-library", "~/common-utils"],
+"usageStatisticsEnabled": true
+}
+```
+
+在這個例子中，我們將主題設為「GitHub」（熱門配色方案），禁用 `autoAccept`（所以 CLI 會在執行可能改變的工具前總是詢問），啟用 Vim 鍵綁定用於輸入編輯器，並強制使用 Docker 進行工具沙盒化。我們也新增了一些目錄到工作區上下文（`includeDirectories`），所以 Gemini 預設可以看到共享路徑中的[程式碼](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=%7B%20,utils)。最後，我們保持 `usageStatisticsEnabled` 為 true 來收集基本使用統計（如果[啟用](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=%2A%20%60autoAccept%60%3A%20Auto,to%20disable%20usage%20statistics)，會匯入遙測）。還有更多設定可用 - 像定義自訂顏色主題、調整 token 限制，或白名單/黑名單特定工具 - 全都記錄在設定[指南](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=%2A%20%60autoAccept%60%3A%20Auto,to%20disable%20usage%20statistics)中。透過客製這些，你確保 Gemini CLI 對*你的*工作流程發揮最佳效果（例如，有些開發者總是想要 `vimMode` 開啟以提升效率，而其他人可能偏好預設編輯器）。
+
+編輯設定的一個方便方式是透過內建的設定 UI。在 Gemini CLI 中執行 `/settings` 指令，它會開啟你[設定](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,their%20current%20values%2C%20and%20modify)的互動式編輯器。這個介面讓你瀏覽和搜尋帶有描述的設定，並透過驗證輸入來防止 JSON 語法錯誤。你可以透過友善的[選單](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,their%20current%20values%2C%20and%20modify)調整顏色、切換像 `yolo`（自動核准）的功能、調整檢查點（檔案儲存/還原行為）等。變更會儲存到你的 `settings.json`，有些會立即生效（其他可能需要重啟 CLI）。
+
+**專業訣竅：** 為不同需求維護分開的專案特定 `settings.json` 檔案。例如，在團隊專案上你可能設定 `"sandbox": "docker"` 和 `"excludeTools": ["run_shell_command"]` 來鎖定危險操作，而你的個人專案可能允許直接 shell 指令。Gemini CLI 會自動取得專案目錄樹中最近的 `.gemini/settings.json` 並與你的全域 [`~/.gemini/settings.json`](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Customize%20the%20CLI%20by%20creating,applied%20with%20the%20following%20precedence) 合併。另外，別忘了你可以快速調整視覺偏好：試試 `/theme` 來互動式切換主題而不用編輯檔案，這很適合找到舒適的[外觀](https://www.howtouselinux.com/post/the-complete-google-gemini-cli-cheat-sheet-and-guide#:~:text=Command%20Description%20,tag%3E%60Save%20the%20current%20conversation)。一旦找到一個，把它放進 `settings.json` 讓它永久化。
+
+## 技巧 24：善用 IDE 整合（VS Code）提供上下文與差異比對
+
+**快速應用場景：** 透過將 Gemini CLI 連接到 VS Code 來強化它 - CLI 會自動知道你正在處理哪些檔案，甚至會在 VS Code 的差異編輯器中為[你](https://developers.googleblog.com/en/gemini-cli-vs-code-native-diffing-context-aware-workflows/?source=post_page-----26afd3422028---------------------------------------#:~:text=,working%20on%20at%20the%20moment)開啟 AI 提議的程式碼變更。這在 AI 助手和你的編碼工作區之間建立了無縫循環。
+
+Gemini CLI 的強大功能之一是與 Visual Studio Code 的 **IDE 整合**。透過在 VS Code 中安裝官方 *Gemini CLI Companion* 擴充功能並連接它，你讓 Gemini CLI 能「感知」你的[編輯器](https://developers.googleblog.com/en/gemini-cli-vs-code-native-diffing-context-aware-workflows/?source=post_page-----26afd3422028---------------------------------------#:~:text=,working%20on%20at%20the%20moment)。實際上這意味著什麼？連接後，Gemini 知道你開啟的檔案、目前游標位置，以及你在 VS [Code](https://developers.googleblog.com/en/gemini-cli-vs-code-native-diffing-context-aware-workflows/?source=post_page-----26afd3422028---------------------------------------#:~:text=,working%20on%20at%20the%20moment) 中選擇的任何文字。所有資訊都輸入到 AI 的上下文中。所以如果你問，「解釋這個函數」，Gemini CLI 可以看到你標記的確切函數並給出相關答案，不需要你複製貼上程式碼到提示詞中。整合分享最多 10 個你最近開啟的檔案，加上選擇和游標資訊，給模型對你[工作區](https://gemini-cli.xyz/docs/en/ide-integration#:~:text=,reject%20the%20suggested%20changes%20seamlessly)的豐富理解。
+
+另一個巨大好處是程式碼變更的**原生差異比對**。當 Gemini CLI 建議修改你的程式碼時（例如，「重構這個函數」並產生補丁），它可以[自動](https://developers.googleblog.com/en/gemini-cli-vs-code-native-diffing-context-aware-workflows/?source=post_page-----26afd3422028---------------------------------------#:~:text=%2A%20Native%20in,the%20code%20right%20within%20this)在 VS Code 的差異檢視器中開啟那些變更。你會在 VS Code 中看到並排差異顯示提議的編輯。接著你可以使用 VS Code 熟悉的介面來審查變更、做任何手動調整，甚至用點擊接受補丁。CLI 和編輯器保持同步 - 如果你在 VS Code 中接受差異，Gemini CLI 知道並以應用那些變更的狀態繼續對話階段。這個緊密循環意味著你不再需要從終端機複製程式碼到編輯器；AI 的建議直接流入你的開發環境。
+
+**如何設定：** 如果你在 VS Code 的整合終端機內啟動 Gemini CLI，它會偵測 VS Code 並通常會[自動](https://medium.com/google-cloud/gemini-cli-tutorial-series-part-10-gemini-cli-vs-code-integration-26afd3422028#:~:text=Press%20enter%20or%20click%20to,view%20image%20in%20full%20size)提示你安裝/連接擴充功能。你可以同意，它會執行必要的 `/ide install` 步驟。如果你沒看到提示（或你稍後才啟用），只需開啟 Gemini CLI 並執行指令：`/ide install`。這會為[你](https://developers.googleblog.com/en/gemini-cli-vs-code-native-diffing-context-aware-workflows/?source=post_page-----26afd3422028---------------------------------------#:~:text=2%3A%20One,install%20the%20necessary%20companion%20extension)擷取並安裝「Gemini CLI Companion」擴充功能到 VS Code。接下來，執行 `/ide enable` 來建立[連接](https://developers.googleblog.com/en/gemini-cli-vs-code-native-diffing-context-aware-workflows/?source=post_page-----26afd3422028---------------------------------------#:~:text=3%3A%20Toggle%20integration%3A%20After%20the,can%20easily%20manage%20the%20integration) - CLI 接著會指示它已連結到 VS Code。你可以隨時用 `/ide status` 驗證，它會顯示是否已連接並列出正在[追蹤](https://gemini-cli.xyz/docs/en/ide-integration#:~:text=Checking%20the%20Status)哪個編輯器和檔案。從那時起，Gemini CLI 會自動從 VS Code 接收上下文（開啟的檔案、選擇），並在需要時在 VS Code 中開啟差異。它本質上將 Gemini CLI 變成一個住在你終端機中的 AI 結對程式設計師，但以對你 IDE 的完整感知運作。
+
+目前，VS Code 是這個[整合](https://gemini-cli.xyz/docs/en/ide-integration#:~:text=better%20and%20enables%20powerful%20features,editor%20diffing)主要支援的編輯器。（其他支援 VS Code 擴充功能的編輯器，像 VSCodium 或一些透過外掛程式的 JetBrains，可能透過相同擴充功能運作，但官方目前是 VS Code。）設計是開放的 - 有用於開發與其他[編輯器](https://gemini-cli.xyz/docs/en/ide-integration#:~:text=better%20and%20enables%20powerful%20features,editor%20diffing)類似整合的 IDE Companion 規格。所以未來我們可能會透過社群擴充功能看到像 IntelliJ 或 Vim 這樣 IDE 的一流支援。
+
+**專業訣竅：** 連接後，你可以使用 VS Code 的命令選擇區來控制 Gemini CLI 而不離開[編輯器](https://gemini-cli.xyz/docs/en/ide-integration#:~:text=,Ctrl%2BShift%2BP)。例如，按 **Ctrl+Shift+P**（Mac 上是 Cmd+Shift+P）並試試像 **「Gemini CLI: Run」**（在終端機啟動新 CLI 對話階段）、**「Gemini CLI: Accept Diff」**（核准並應用開啟的差異）或 **「Gemini CLI: Close Diff Editor」**（拒絕[變更](https://gemini-cli.xyz/docs/en/ide-integration#:~:text=,Ctrl%2BShift%2BP)）這樣的指令。這些快捷鍵可以進一步簡化你的工作流程。記住，你不總是需要手動啟動 CLI - 如果你啟用整合，Gemini CLI 本質上變成 VS Code 內的 AI 共同開發者，觀察上下文並在你處理程式碼時隨時準備協助。
+
+## 技巧 25：使用 `Gemini CLI GitHub Action` 自動化 Repo 任務
+
+**快速應用場景：** 讓 Gemini 在 GitHub 上工作 - 使用 **Gemini CLI GitHub Action** 來自主分類新問題和審查儲存庫中的拉取請求，作為處理例行開發[任務](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=1,write%20tests%20for%20this)的 AI 團隊成員。
+
+Gemini CLI 不只是用於互動式終端機對話階段；它也可以透過 GitHub Actions 在 CI/CD 管線中執行。Google 提供了現成的 **Gemini CLI GitHub Action**（目前在 beta 階段），整合到你 repo 的[工作流程](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=It%E2%80%99s%20now%20in%20beta%2C%20available,cli)中。這有效地將 AI 代理部署到你在 GitHub 上的專案中。它在背景執行，由儲存庫[事件](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=Triggered%20by%20events%20like%20new,do%2C%20and%20gets%20it%20done)觸發。例如，當有人開啟**新問題**時，Gemini Action 可以自動分析問題描述、套用相關標籤，甚至排定優先級或建議重複（這是「智慧問題分類」[工作流程](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=1,attention%20on%20what%20matters%20most)）。當開啟**拉取請求**時，Action 會啟動提供 **AI 程式碼審查** - 它會對 PR 評論關於程式碼品質、潛在錯誤或風格[改進](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=attention%20on%20what%20matters%20most,more%20complex%20tasks%20and%20decisions)的洞察。這在任何人類看之前就給維護者對 PR 的即時回饋。也許最酷的功能是**按需協作**：團隊成員可以在問題或 PR 評論中提及 `@gemini-cli` 並給它指示，像「`@gemini-cli` 請為這個寫單元測試」。Action 會接收並 Gemini CLI 會嘗試完成請求（例如，新增一個有新測試的[提交](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=freeing%20up%20reviewers%20to%20focus,write%20tests%20for%20this)）。這就像有個 AI 助手住在你的 repo 中，在被要求時隨時準備做瑣事。
+
+設定 Gemini CLI GitHub Action 很直接。首先，確保你本地安裝了 Gemini CLI 版本 **0.1.18 或更新**（這確保與 [Action](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=Gemini%20CLI%20GitHub%20Actions%20is,for%20individual%20users%20available%20soon) 的相容性）。然後，在 Gemini CLI 中執行特殊指令：[`/setup-github`](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=To%20get%20started%2C%20download%20Gemini,cli)。這個指令在你的儲存庫中生成必要的工作流程檔案（如果需要會引導你進行驗證）。具體來說，它在 `.github/workflows/` 下新增 YAML 工作流程檔案（用於問題分類、PR 審查等）。你需要將 Gemini API 金鑰新增到 repo 的機密（作為 `GEMINI_API_KEY`），這樣 Action 才能使用 Gemini [API](https://github.com/google-github-actions/run-gemini-cli#:~:text=Store%20your%20API%20key%20as,in%20your%20repository)。完成並提交工作流程後，GitHub Action 就會活躍起來 - 從那時起，Gemini CLI 會根據那些工作流程自主回應新問題和 PR。
+
+因為這個 Action 本質上是以自動化方式執行 Gemini CLI，你可以像自訂你的 CLI 一樣自訂它。預設設定帶有三個工作流程（問題分類、PR 審查，以及一般提及觸發的助手），它們是**完全開源且[可編輯的**](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=Think%20of%20these%20initial%20workflows,into%20Gemini%20CLI%20GitHub%20Actions)。你可以調整 YAML 來調整 AI 做什麼，甚至新增新工作流程。例如，你可能建立每晚工作流程，使用 Gemini CLI 掃描儲存庫尋找過時的相依套件，或根據最近的程式碼變更更新 README - 可能性是無窮的。這裡的關鍵好處是將平凡或耗時的任務卸載給 AI 代理，讓人類開發者可以專注於更難的問題。由於它在 GitHub 的基礎設施上執行，不需要你的介入 - 這真正是個「設定後就忘記」的 AI 助手。
+
+**專業訣竅：** 為了透明度，留意 GitHub Actions 日誌中 Action 的輸出。Gemini CLI Action 日誌會顯示它執行的提示詞以及它做了或建議了什麼變更。這既能建立信任，也能幫助你精煉其行為。另外，團隊在 Action 中建立了企業級保障措施 - 例如，你可以要求 AI 在工作流程中嘗試執行的所有 shell 指令必須由[你](https://blog.google/technology/developers/introducing-gemini-cli-github-actions/#:~:text=in%20your%20environment%2C%20drastically%20reducing,your%20preferred%20observability%20platform%2C%20like)列入白名單。所以即使在嚴肅專案上也不要猶豫使用它。如果你用 Gemini CLI 想出了酷炫的自訂工作流程，考慮將它貢獻回社群 - 專案歡迎他們 repo 中的新想法！
+
+## 技巧 26：啟用遙測以獲得洞察與可觀察性
+
+**快速應用場景：** 透過開啟內建的 **OpenTelemetry** 檢測，深入了解 Gemini CLI 如何被使用和執行 - 監控 AI 對話階段的指標、日誌和追蹤來分析使用模式或疑難排解[問題](https://google-gemini.github.io/gemini-cli/docs/cli/telemetry.html#:~:text=,across%20teams%2C%20track%20costs%2C%20ensure)。
+
+對於喜歡測量和最佳化的開發者，Gemini CLI 提供了可觀察性功能，揭露底層發生的事情。透過利用 **OpenTelemetry (OTEL)**，Gemini CLI 可以發出關於你[對話階段](https://google-gemini.github.io/gemini-cli/docs/cli/telemetry.html#:~:text=Built%20on%20OpenTelemetry%20%E2%80%94%20the,Gemini%20CLI%E2%80%99s%20observability%20system%20provides)的結構化遙測資料。這包括像指標（例如使用了多少 token、回應延遲）、動作日誌，甚至工具呼叫的追蹤。啟用遙測後，你可以回答像這樣的問題：*我最常使用哪個自訂指令？這週 AI 在這個專案中編輯了多少次檔案？當我要求 CLI 執行測試時，平均回應時間是多少？*這樣的資料對理解使用模式和[效能](https://google-gemini.github.io/gemini-cli/docs/cli/telemetry.html#:~:text=,across%20teams%2C%20track%20costs%2C%20ensure)極為寶貴。團隊可以用它來看開發者如何與 AI 助手互動以及瓶頸可能在哪裡。
+
+預設情況下，遙測是**關閉的**（Gemini 尊重隱私和效能）。你可以透過在 `settings.json` 中設定 `"telemetry.enabled": true` 或用旗標 [`--telemetry`](https://google-gemini.github.io/gemini-cli/docs/cli/telemetry.html#:~:text=Setting%20Environment%20Variable%20CLI%20Flag,grpc) 啟動 Gemini CLI 來選擇加入。此外，你選擇遙測資料的**目標**：它可以在**本地**記錄或發送到像 Google Cloud 這樣的後端。快速開始，你可能會設定 `"telemetry.target": "local"` - 這樣，Gemini 會簡單地將遙測資料寫入本地檔案（預設）或你透過 [`"outfile"`](https://google-gemini.github.io/gemini-cli/docs/cli/telemetry.html#:~:text=disable%20telemetry%20,file%20path) 指定的自訂路徑。本地遙測包括你可以解析或輸入工具的 JSON 日誌。對於更健全的監控，設定 `"target": "gcp"`（Google Cloud）或甚至整合其他相容 OpenTelemetry 的系統，像 Jaeger 或 [Datadog](https://google-gemini.github.io/gemini-cli/docs/cli/telemetry.html#:~:text=,between%20backends%20without%20changing%20your)。實際上，Gemini CLI 的 OTEL 支援是供應商中立的 - 你可以將資料匯出到幾乎任何你偏好的可觀察性堆疊（Google Cloud Operations、Prometheus [等](https://google-gemini.github.io/gemini-cli/docs/cli/telemetry.html#:~:text=,between%20backends%20without%20changing%20your)）。Google 為 Cloud 提供簡化路徑：如果你指向 GCP，CLI 可以直接將資料發送到你專案中的 Cloud Logging 和 Cloud Monitoring，你可以在那裡使用常用的儀表板和警示[工具](https://google-gemini.github.io/gemini-cli/docs/cli/telemetry.html#:~:text=2,explorer%20%2A%20Traces%3A%20https%3A%2F%2Fconsole.cloud.google.com%2Ftraces%2Flist)。
+
+你能獲得什麼樣的洞察？遙測捕獲像工具執行、錯誤和重要里程碑這樣的事件。它也記錄像提示詞處理時間和每個[提示詞](https://medium.com/google-cloud/gemini-cli-tutorial-series-part-13-gemini-cli-observability-c410806bc112#:~:text=,integrate%20with%20existing%20monitoring%20infrastructure)的 token 計數這樣的指標。對於使用分析，你可能會彙總團隊中每個斜線指令被使用多少次，或程式碼生成被呼叫的頻率。對於效能監控，你可以追蹤回應是否變慢，這可能表示達到 API 速率限制或模型變更。對於除錯，你可以看到工具拋出的錯誤或例外（例如，`run_shell_command` 失敗）帶著上下文記錄。如果你將這些資料發送到像 Google Cloud Monitoring 這樣的平台，所有這些資料都可以視覺化 - 例如，你可以建立「每日使用的 token」或「工具 X 的錯誤率」的儀表板。它本質上給你一個窗口進入 AI 的「大腦」和你的使用情況，在企業設定中特別有幫助，以確保一切順利[運行](https://medium.com/google-cloud/gemini-cli-tutorial-series-part-13-gemini-cli-observability-c410806bc112#:~:text=resource%20utilization%20%2A%20%20Real,integrate%20with%20existing%20monitoring%20infrastructure)。
+
+啟用遙測確實會引入一些開銷（額外的資料處理），所以你可能不會 100% 的時間都為個人使用開啟它。然而，它對除錯對話階段或間歇性健康檢查很棒。一個方法是在 CI 伺服器或團隊的共享環境中啟用它來收集統計，而本地除非需要就關閉它。記住，你總是可以即時切換：更新設定並如果需要使用 `/memory refresh` 重新載入，或用 `--telemetry` 旗標重啟 Gemini CLI。另外，所有遙測都在你的控制下 - 它尊重你的環境變數用於端點和憑證，所以資料只去你打算的地方。這個功能將 Gemini CLI 從黑盒子變成天文台，照亮 AI 代理如何與你的世界互動，所以你可以持續改進那個互動。
+
+**專業訣竅：** 如果你只是想快速查看目前對話階段的統計（不需要完整遙測），使用 `/stats` 指令。它會在 [CLI](https://www.howtouselinux.com/post/the-complete-google-gemini-cli-cheat-sheet-and-guide#:~:text=Command%20Description%20,tag%3E%60Save%20the%20current%20conversation) 中直接輸出像 token 使用和對話階段長度這樣的指標。這是查看即時數字的輕量方式。但對於長期或多對話階段分析，遙測是正道。如果你將遙測發送到雲端專案，考慮設定儀表板或警報（例如，如果錯誤率激增或 token 使用達到閾值就警報）- 這可以主動捕捉團隊中 Gemini CLI 使用方式的問題。
+
+## 技巧 27：關注開發路線圖（背景代理等功能）
+
+**快速應用場景：** 保持對即將到來的 Gemini CLI 功能的資訊 - 透過追蹤公開的 **Gemini CLI 路線圖**，你會在主要計劃增強（像*用於長時間執行任務的背景代理*）[到來](https://google-gemini.github.io/gemini-cli/ROADMAP.html#:~:text=quality.%20,related%20to%20security%20and%20privacy)之前就知道，讓你能規劃並給予回饋。
+
+Gemini CLI 正在快速發展，新版本頻繁發布，所以追蹤即將到來的內容是明智的。Google 在 GitHub 上維護 Gemini CLI 的**公開路線圖**，詳細說明近期[未來](https://google-gemini.github.io/gemini-cli/ROADMAP.html#:~:text=This%20document%20outlines%20our%20approach,live%20in%20our%20GitHub%20Issues)的關鍵焦點領域和目標功能。這本質上是個活文件（和一組問題），你可以在那裡看到開發者正在做什麼以及管線中有什麼。例如，路線圖上一個令人興奮的項目是支援**背景代理** - 能夠產生在背景執行的自主代理來持續或[非同步](https://google-gemini.github.io/gemini-cli/ROADMAP.html#:~:text=quality.%20,related%20to%20security%20and%20privacy)處理任務的能力。根據路線圖討論，這些背景代理會讓你將長時間執行的程序委派給 Gemini CLI，而不綁住你的互動對話階段。你可以，比如說，啟動一個監控專案特定事件或定期執行任務的背景代理，在你的本地機器上或甚至透過部署到像 Cloud [Run](https://github.com/google-gemini/gemini-cli/issues/4168#:~:text=How%20will%20it%20work%3F) 這樣的服務。這個功能旨在「從 [CLI](https://google-gemini.github.io/gemini-cli/ROADMAP.html#:~:text=quality.%20,related%20to%20security%20and%20privacy) 啟用長時間執行、自主任務和主動協助」，本質上將 Gemini CLI 的用途延伸超越只是按需查詢。
+
+透過密切關注路線圖，你也會了解其他計劃功能。這些可能包括新工具整合、支援額外的 Gemini 模型版本、UI/UX 改進等。路線圖通常按「領域」組織（例如，*擴充性*、*模型*、*背景*等），並經常用里程碑標記（像交付的目標[季度](https://google-gemini.github.io/gemini-cli/ROADMAP.html#:~:text=Our%20roadmap%20is%20managed%20directly,more%20detailed%20list%20of%20tasks)）。它不是某些東西何時會落地的保證，但它給了團隊優先級的好主意。由於專案是開源的，你甚至可以深入每個路線圖項目連結的 GitHub 問題來看設計提案和進度。對於依賴 Gemini CLI 的開發者，這種透明度意味著你可以預期變更 - 也許 API 正在新增你需要的功能，或即將到來的破壞性變更你想要準備。
+
+追蹤路線圖可以簡單到加書籤 GitHub 專案板或標記為「Roadmap」的問題並定期檢查。一些主要更新（像 Extensions 或 IDE 整合的引入）在正式宣布前在路線圖中被暗示，所以你得到搶先看。此外，Gemini CLI 團隊經常鼓勵對那些未來功能的社群回饋。如果你對像背景代理這樣的東西有想法或使用案例，你通常可以在問題或討論串上評論來影響其開發。
+
+**專業訣竅：** 由於 Gemini CLI 是開源的（Apache 2.0 授權），你可以做的不只是觀看路線圖 - 你可以參與！維護者歡迎貢獻，特別是針對與[路線圖](https://google-gemini.github.io/gemini-cli/ROADMAP.html#:~:text=As%20an%20Apache%202,opening%20an%20issue%20for%20discussion)對齊的項目。如果有你真正在意的功能，考慮在預覽階段貢獻程式碼或測試。至少，如果你需要的東西還不在路線圖[上](https://google-gemini.github.io/gemini-cli/ROADMAP.html#:~:text=As%20an%20Apache%202,opening%20an%20issue%20for%20discussion)，你可以開功能請求。路線圖頁面本身提供如何提出變更的指導。與專案互動不只讓你保持在循環中，也讓你能塑造你使用的工具。畢竟，Gemini CLI 是考慮到社群參與建構的，許多最近的功能（像某些擴充功能和工具）開始時都是社群建議。
+
+## 技巧 28：使用 `擴充功能` 擴展 Gemini CLI
+
+**快速應用場景：** 透過安裝隨插即用的**擴充功能**來新增 Gemini CLI 的新能力 - 例如，整合你最愛的資料庫或雲端服務 - 擴展 AI 的工具集而不需要你這邊的任何繁重[工作](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=Gemini%20CLI%20is%20an%20open,design%20platforms%20to%20payment%20services)。這就像為你的 CLI 安裝應用程式來教它新招式。
+
+擴充功能是 2025 年底引入的遊戲規則改變者：它們允許你以模組化[方式](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=Gemini%20CLI%20is%20an%20open,design%20platforms%20to%20payment%20services)**自訂和擴展** Gemini CLI 的功能。擴充功能本質上是將 Gemini CLI 連接到外部工具或服務的設定（和可選的程式碼）組合。例如，Google 為 Google Cloud 發布了一套擴充功能 - 有一個協助將應用程式部署到 Cloud Run，一個管理 BigQuery，一個分析應用程式安全性，[更多](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=In%20just%20three%20months%20since,source%20community)。合作夥伴和社群開發者已經為各種東西建立擴充功能：Dynatrace（監控）、Elastic（搜尋分析）、Figma（設計資產）、Shopify、Snyk（安全掃描）、Stripe（支付），而且列表還在[增長](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=In%20just%20three%20months%20since,source%20community)。透過安裝適當的擴充功能，你立即賦予 Gemini CLI 使用新的特定領域工具的能力。美妙之處在於這些擴充功能帶有預先定義的**「劇本」**，教 AI 如何有效地使用新[工具](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=Gemini%20CLI%20is%20an%20open,design%20platforms%20to%20payment%20services)。這意味著一旦安裝，你可以要求 Gemini CLI 用那些服務執行任務，它會知道要呼叫的適當 API 或指令，就像它內建那些知識一樣。
+
+使用擴充功能非常直接。CLI 有管理它們的指令：`gemini extensions install <URL>`。通常，你提供擴充功能的 GitHub repo 的 URL 或本地路徑，CLI 會擷取並安裝[它](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=It%E2%80%99s%20easy%20to%20install%20an,%E2%80%9D%20from%20your%20command%20line)。例如，要安裝官方擴充功能，你可能會執行：`gemini extensions install https://github.com/google-gemini/gemini-cli-extension-cloud-run`。幾秒鐘內，擴充功能被新增到你的環境（儲存在 `~/.gemini/extensions/` 或你專案的 `.gemini/extensions/` 資料夾下）。接著你可以在 CLI 中執行 `/extensions` 來看它，它會列出啟用的[擴充功能](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html#:~:text=,See%20Gemini%20CLI%20Extensions)。從那時起，AI 有新工具可以使用。如果它是 Cloud Run 擴充功能，你可以說「將我的應用程式部署到 Cloud Run」，Gemini CLI 實際上就能執行（透過擴充功能的工具呼叫底層的 `gcloud` 指令）。本質上，擴充功能作為 Gemini CLI 能力的一流擴展，但你選擇加入你需要的那些。
+
+擴充功能周圍有個**開放生態系統**。Google 有列出可用[擴充功能](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=Access%20an%20open%2C%20growing%20ecosystem,of%20partners%20and%20builders)的官方擴充功能頁面，因為框架是開放的，任何人都可以建立和分享自己的。如果你有特定的內部 API 或工作流程，你可以為它建立擴充功能，這樣 Gemini CLI 就能協助它。寫擴充功能比聽起來容易：你通常建立一個目錄（比如說，`my-extension/`），帶有描述要[新增](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Extensions)什麼工具或上下文的檔案 `gemini-extension.json`。你可能定義新的斜線指令或指定 AI 可以呼叫的遠端 API。不需要修改 Gemini CLI 的核心 - 只要放入你的擴充功能。CLI 被設計為在執行時載入這些。許多擴充功能包含新增 AI 可以使用的自訂 *MCP 工具*（Model Context Protocol 伺服器或函數）。例如，擴充功能可以透過連接外部翻譯 API 來新增 `/translate` 指令；一旦安裝，AI 就知道如何使用 `/translate`。關鍵好處是**模組化**：你只安裝你想要的擴充功能，保持 CLI 輕量，但你有選項可以整合幾乎任何東西。
+
+要管理擴充功能，除了 `install` 指令，你可以透過類似的 CLI 指令（`gemini extensions update` 或只是移除資料夾）來更新或移除它們。偶爾檢查你使用的擴充功能的更新是明智的，因為它們可能會收到改進。CLI 未來可能會引入「擴充功能市集」風格的介面，但現在，探索 GitHub 儲存庫和官方目錄是發現新擴充功能的方式。發布時一些熱門的包括 GenAI **Genkit** 擴充功能（用於建構生成式 AI 應用程式），以及涵蓋 CI/CD、資料庫管理等的各種 Google Cloud 擴充功能。
+
+**專業訣竅：** 如果你正在建立自己的擴充功能，先看看現有的作為範例。官方文件提供帶有架構和[能力](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Extensions)的**擴充功能指南**。建立私人擴充功能的簡單方式是使用 `GEMINI.md` 中的 `@include` 功能來注入腳本或上下文，但完整的擴充功能給你更多能力（像打包工具）。另外，由於擴充功能可以包含上下文檔案，你可以用它們來預載領域知識。想像一個你公司內部 API 的擴充功能，包含 API 摘要和呼叫它的工具 - AI 接著就會知道如何處理與那個 API 相關的請求。簡而言之，擴充功能開啟了 Gemini CLI 可以與任何東西介接的新世界。留意擴充功能市集的新增內容，別猶豫與社群分享你建立的任何有用擴充功能 - 你可能會幫助數千其他[開發者](https://blog.google/technology/developers/gemini-cli-extensions/#:~:text=Gemini%20CLI%20extensions%20are%20here,and%20build%20your%20own%20extension)。
+
+## 額外趣味：柯基模式彩蛋 🐕
+
+最後，不是生產力技巧但很有趣的彩蛋 - 在 Gemini CLI 中試試指令 `*/corgi*`。這會切換**「柯基模式」**，讓可愛的柯基動畫在你的[終端機](https://medium.com/@ferreradaniel/gemini-cli-free-ai-tool-upgrade-5-new-features-you-need-right-now-04cfefac5e93#:~:text=Easter%20Egg%3A%20Corgi%20Mode%20in,Gemini%20CLI)上奔跑！它不會幫助你寫更好的程式碼，但它肯定能在長時間的編碼對話階段中提振心情。你會看到 ASCII 藝術柯基在 CLI 介面中奔跑。要關閉它，只需再執行一次 `/corgi`。
+
+這是團隊加的純粹娛樂功能（是的，甚至有個半開玩笑的[辯論](https://github.com/google-gemini/gemini-cli/issues/5674#:~:text=How%20about%20you%20NOT%20implement,this%20needed%3F%20Because%20people)關於花開發時間在柯基模式上）。它顯示創作者在工具中隱藏了一些異想天開。所以當你需要快速休息或微笑時，試試 `/corgi`。🐕🎉
+
+*（傳聞可能還有其他彩蛋或模式 - 誰知道呢？也許是個「/partyparrot」或類似的。速查表或 help 指令列出了 `/corgi`，所以這不是秘密，只是未被充分使用。現在你知道這個笑話了！）*
+
+---
+
+**結論：**
+
+我們已經涵蓋了 Gemini CLI 的專業技巧和功能的全面列表。從用 `GEMINI.md` 設定持久化上下文，到撰寫自訂指令和使用像 MCP 伺服器這樣的進階工具，到利用多模態輸入和自動化工作流程，這個 AI 命令列助手可以做很多事情。作為外部開發者，你可以將 Gemini CLI 整合到你的日常例行工作中 - 它就像你終端機中強大的盟友，可以處理繁瑣的任務、提供洞察，甚至疑難排解你的環境。
+
+Gemini CLI 正在快速發展（作為有社群貢獻的開源專案），所以新功能和改進持續在地平線上。透過掌握本指南中的專業技巧，你將能充分發揮這個工具的全部潛力。這不只是使用 AI 模型 - 這是關於將 AI 深度整合到你如何開發和管理軟體中。
+
+祝使用 Gemini CLI 編碼愉快，享受探索你的「終端機中的 AI 代理」能帶你走多遠。
+
+**你現在手上有 AI 的瑞士刀 - 明智地使用它，它會讓你成為更有生產力（也許更快樂）的開發者**！
 
