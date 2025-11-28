@@ -406,3 +406,381 @@ gemini --yolo
 
 *（如果這能讓你感到安慰，你不是一個人 - 社群中許多人開玩笑說「我 YOLO 了，結果 Gemini 做了瘋狂的事。」所以要使用它，但是... 嗯，你只活一次。）*
 
+## 技巧 11：無頭模式與腳本模式（在背景執行 Gemini CLI）
+
+**快速應用場景：** 你可以在腳本或自動化中使用 Gemini CLI，透過**無頭模式**執行。這意味著你透過命令列參數或環境變數提供提示詞（或甚至完整對話），Gemini CLI 產生輸出然後結束。這很適合與其他工具整合或按計劃觸發 AI 任務。
+
+例如，要在不開啟 REPL 的情況下獲得一次性答案，你已經看過可以使用 `gemini -p "...提示詞..."`。這已經是無頭使用：它印出模型的回應並回到 [shell](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Non,and%20get%20a%20single%20response)。但你可以做更多：
+
+* **系統提示詞覆寫：** 如果你想用自訂系統角色或指示集（不同於預設）執行 Gemini CLI，你可以使用環境變數 `GEMINI_SYSTEM_MD`。透過設定這個，你告訴 Gemini CLI 忽略其內建系統提示詞，改用你提供的檔案。例如：
+
+```bash
+export GEMINI_SYSTEM_MD="/path/to/custom_system.md"
+gemini -p "以高度謹慎執行任務 X"
+```
+
+這會在執行[提示詞](https://medium.com/google-cloud/practical-gemini-cli-bring-your-own-system-instruction-19ea7f07faa2#:~:text=The%20,rather%20than%20its%20hardcoded%20defaults)前，載入你的 `custom_system.md` 作為系統提示詞（AI 遵循的「角色」和規則）。或者，如果你設定 `GEMINI_SYSTEM_MD=true`，CLI 會在目前專案的 `.gemini` [目錄](https://medium.com/google-cloud/practical-gemini-cli-bring-your-own-system-instruction-19ea7f07faa2#:~:text=The%20feature%20is%20enabled%20by,specific%20configurations)中尋找名為 `system.md` 的檔案。這個功能非常進階 - 它本質上允許你用自己的指示*替換 CLI 的內建大腦*，有些使用者為了專門的工作流程這樣做（像模擬特定角色或執行超嚴格的政策）。小心使用，因為替換核心提示詞會影響工具使用（核心提示詞包含 AI 如何選擇和使用[工具](https://medium.com/google-cloud/practical-gemini-cli-bring-your-own-system-instruction-19ea7f07faa2#:~:text=If%20you%20read%20my%20previous,proper%20functioning%20of%20Gemini%20CLI)的重要指示）。
+
+* **透過 CLI 直接提示詞：** 除了 `-p`，還有 `-i`（互動提示詞），它用初始提示詞啟動對話階段，然後保持開啟。例如：`gemini -i "哈囉，我們來除錯一些東西"` 會開啟 REPL 並已經向模型打過招呼。這在你希望第一個問題在啟動時立即被詢問時很有用。
+
+* **用 shell 管線編寫腳本：** 你可以透過管線不只傳遞文字，還有檔案或指令輸出給 Gemini。例如：`gemini -p "摘要這個日誌：" < big_log.txt` 會將 `big_log.txt` 的內容輸入到提示詞中（在「摘要這個日誌：」這句話之後）。或者你可能會做 `some_command | gemini -p "根據上面的輸出，哪裡出錯了？"`。這個技巧允許你用 AI 分析來組合 Unix 工具。它是無頭的，因為它是單次操作。
+
+* **在 CI/CD 中執行：** 你可以將 Gemini CLI 整合到建構流程中。例如，CI 管線可能執行測試，然後使用 Gemini CLI 自動分析失敗的測試輸出並發布評論。使用 `-p` 旗標和環境驗證，這可以編寫成腳本。（當然，確保環境有所需的 API 金鑰或驗證。）
+
+還有一個無頭技巧：**`--format=json` 旗標**（或設定）。Gemini CLI 可以用 JSON 格式而不是人類可讀的文字輸出回應，如果你[配置](https://google-gemini.github.io/gemini-cli/docs/cli/configuration.html#:~:text=)它。這對於程式化消費很有用 - 你的腳本可以解析 JSON 來獲得答案或任何工具動作細節。
+
+**為什麼無頭模式重要：** 它將 Gemini CLI 從互動助手轉變為其他程式可以呼叫的**後端服務**或工具。你可以安排一個 cronjob 每晚執行 Gemini CLI 提示詞（想像生成報告或用 AI 邏輯清理某些東西）。你可以在 IDE 中連接一個按鈕，觸發針對特定任務的無頭 Gemini 執行。
+
+**範例：** 假設你想要每日新聞網站摘要。你可以有個腳本：
+
+```bash
+gemini -p "網頁擷取「https://news.site/top-stories」並擷取標題，然後寫入 headlines.txt"
+```
+
+或許配合 `--yolo`，這樣它就不會要求確認來寫入檔案。這會使用網頁擷取工具來取得頁面，以及檔案寫入工具來儲存標題。全自動，沒有人工介入。一旦你把 Gemini CLI 當作可編寫腳本的元件，可能性是無窮的。
+
+總之，**無頭模式**啟用了自動化。這是 Gemini CLI 與其他系統之間的橋樑。掌握它意味著你可以擴大 AI 使用規模 - 不只是在你打字時，即使在你不在時，你的 AI 代理也可以為你工作。
+
+*（提示：對於真正長時間執行的非互動任務，你可能也會研究 Gemini CLI 的「計劃」模式，或它如何在沒有干預的情況下生成多步驟計劃。然而，這些是超出此範圍的進階主題。在大多數情況下，透過無頭模式精心設計的單一提示詞可以完成很多事情。）*
+
+## 技巧 12：儲存與恢復對話階段
+
+**快速應用場景：** 如果你與 Gemini CLI 除錯問題已經一小時需要停下來，你不必失去對話上下文。使用 `/chat save <名稱>` 來儲存對話階段。之後（即使重啟 CLI 後），你可以使用 `/chat resume <名稱>` 從離開的地方[繼續](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands)。這樣，長時間對話可以無縫地暫停和繼續。
+
+Gemini CLI 本質上有內建的對話階段管理器。要知道的指令有：
+
+* `/chat save <標籤>` - 用你[提供的](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands)標籤/名稱儲存目前對話狀態。標籤就像該對話階段的檔案名或鍵。如果想要的話可以經常儲存，它會覆寫該標籤（如果存在）。（使用描述性名稱很有幫助 - 例如，`chat save fix-docker-issue`。）
+
+* `/chat list` - 列出所有已儲存的對話階段（你[使用過的](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands)標籤）。這幫助你記住之前儲存過什麼。
+
+* `/chat resume <標籤>` - 恢復具有該標籤的對話階段，將整個對話上下文和歷史恢復到[儲存時](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,help%20information%20and%20available%20commands)的狀態。就像你從未離開。你可以從那個點繼續對話。
+
+* `/chat share` - （儲存到檔案）這很有用，因為你可以與其他人分享整個對話，他們可以繼續對話階段。幾乎像協作一樣。
+
+在底層，這些對話階段可能儲存在 `~/.gemini/chats/` 或類似位置。它們包含對話訊息和任何相關狀態。這個功能對以下情況超級有用：
+
+* **長時間除錯對話階段：** 有時與 AI 除錯可能需要長時間來回。如果你不能一次解決，儲存它並稍後回來（也許有新想法）。AI 仍會「記得」之前的所有東西，因為整個上下文都重新載入了。
+
+* **多日任務：** 如果你使用 Gemini CLI 作為專案助手，你可能有一個針對「重構模組 X」的對話階段，跨越多天。你可以每天恢復那個特定對話，這樣上下文就不會每天重設。同時，你可能有另一個針對「撰寫文件」的對話階段分別儲存。切換上下文只是儲存一個和恢復另一個的事情。
+
+* **團隊交接：** 這更實驗性，但理論上，你可以與同事分享已儲存對話的內容（儲存的檔案可能是可攜的）。如果他們把它放在他們的 `.gemini` 目錄並恢復，他們可以看到相同的上下文。**實際上更簡單的協作方法**是只從日誌複製相關的問答，並使用共享的 `GEMINI.md` 或提示詞，但有趣的是對話階段資料是你可以保留的。
+
+**使用範例：**
+
+```bash
+/chat save api-upgrade
+```
+
+*（對話階段儲存為「api-upgrade」）*
+
+```bash
+/quit
+```
+
+*（稍後，重新開啟 CLI）*
+
+```bash
+$ gemini
+gemini> /chat list
+```
+
+*（顯示：api-upgrade）*
+
+```bash
+gemini> /chat resume api-upgrade
+```
+
+現在模型以最後交流的狀態準備好迎接你。你可以向上捲動確認之前的所有訊息都在。
+
+**進階技巧：** 儲存[對話時](https://medium.com/@ferreradaniel/gemini-cli-free-ai-tool-upgrade-5-new-features-you-need-right-now-04cfefac5e93#:~:text=Naming%20conventions%20to%20keep%20projects,organized)使用有意義的標籤。不要用 `/chat save session1`，給它一個與主題相關的名稱（例如 `/chat save memory-leak-bug`）。這會幫助你之後透過 `/chat list` 找到正確的對話階段。沒有宣布對可以儲存多少對話階段的嚴格限制，但偶爾清理舊的對話階段可能是明智的，只是為了組織。
+
+這個功能將 Gemini CLI 變成持久的顧問。你不會失去對話中獲得的知識；你總是可以暫停和恢復。這是與一些其他在關閉時忘記上下文的 AI 介面的差異點。對於進階使用者來說，這意味著**你可以與 AI 維持並行的工作執行緒**。就像你為不同任務有多個終端分頁，你可以有多個已儲存的對話階段，並在任何時候恢復你需要的那個。
+
+## 技巧 13：多目錄工作區 - 一個 Gemini，多個資料夾
+
+**快速應用場景：** 你的專案分散在多個儲存庫或目錄中嗎？你可以啟動 Gemini CLI 並*同時*存取*所有目錄*，這樣它就能看到統一的工作區。例如，如果你的前端和後端是分開的資料夾，你可以包含兩者，這樣 Gemini 就能編輯或參考兩者中的檔案。
+
+有兩種方式使用**多目錄模式**：
+
+* **啟動旗標：** 啟動 Gemini CLI 時使用 `--include-directories`（或 `-I`）旗標。例如：
+
+```bash
+gemini --include-directories "../backend:../frontend"
+```
+
+這假設你從，比如說，`scripts` 目錄執行指令，並想包含兩個兄弟資料夾。你提供冒號分隔的路徑列表。Gemini CLI 接著會把所有這些目錄當作一個大工作區。
+
+* **持久設定：** 在你的 `settings.json` 中，你可以定義 `"includeDirectories": ["path1", "path2", [...]](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,61AFEF%22%2C%20%22AccentPurple)`。這在你總是想要載入某些共同目錄（例如，多個專案使用的共享函式庫資料夾）時很有用。路徑可以是相對或絕對的。路徑中的環境變數（像 `~/common-utils`）是[允許的](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=,61AFEF%22%2C%20%22AccentPurple)。
+
+當多目錄模式啟用時，CLI 的上下文和工具會考慮所有包含位置的檔案。`> /directory show` 指令會列出目前[工作區](https://medium.com/@ferreradaniel/gemini-cli-free-ai-tool-upgrade-5-new-features-you-need-right-now-04cfefac5e93#:~:text=How%20to%20add%20multiple%20directories,step)中的目錄。你也可以在對話階段中動態新增目錄，使用 `/directory add [<path>](https://medium.com/@ferreradaniel/gemini-cli-free-ai-tool-upgrade-5-new-features-you-need-right-now-04cfefac5e93#:~:text=How%20to%20add%20multiple%20directories,step)` - 它會即時載入（可能掃描它以取得上下文，就像啟動時一樣）。
+
+**為什麼使用多目錄模式？** 在微服務架構或模組化程式碼庫中，一段程式碼住在一個儲存庫中，另一段住在不同的儲存庫中是很常見的。如果你只在一個中執行 Gemini，它看不到其他的。透過組合它們，你啟用了跨專案的推理。例如，你可以問，「更新前端中的 API 客戶端以匹配後端的新 API 端點」- Gemini 可以開啟後端資料夾來查看 API 定義，同時開啟前端程式碼來相應地修改它。沒有多目錄，你得一次做一邊，並手動傳遞資訊。
+
+**範例：** 假設你有 `client/` 和 `server/`。你啟動：
+
+```bash
+cd client
+gemini --include-directories "../server"
+```
+
+現在在 `gemini>` 提示符號下，如果你執行 `> !ls`，你會看到它可以列出 `client` 和 `server` 中的檔案（它可能將它們顯示為分開的路徑）。你可以：
+
+```bash
+並排開啟 server/routes/api.py 和 client/src/api.js 來比較函數名稱。
+```
+
+AI 將能存取兩個檔案。或者你可能會說：
+
+```bash
+API 變更了：端點「/users/create」現在是「/users/register」。相應地更新後端和前端。
+```
+
+它可以同時在後端路由中建立補丁，並調整前端的 fetch 呼叫。
+
+在底層，Gemini 合併這些目錄的檔案索引。如果每個目錄都很大，可能會有一些效能考量，但通常它能很好地處理多個小到中型專案。速查表注意到這有效地建立了一個具有多個[根的](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=%22includeDirectories%22%3A%20%5B%22..%2Fshared,98C379%22%2C%20%22AccentYellow)工作區。
+
+**技巧中的技巧：** 即使你不總是使用多目錄，要知道你仍然可以透過絕對路徑在提示詞中參考整個檔案系統的檔案（`@/path/to/file`）。然而，沒有多目錄，Gemini 可能沒有權限編輯那些檔案或不知道要主動從它們載入上下文。多目錄正式將它們包含在範圍內，所以它知道整個集合的所有檔案，以便進行像搜尋或跨整個集合的程式碼生成這樣的任務。
+
+**移除目錄：** 如果需要，`/directory remove <path>`（或類似指令）可以從工作區移除一個目錄。這比較不常見，但如果你不小心包含了某些東西，你可以移除它。
+
+總之，**多目錄模式統一了你的上下文**。對於多儲存庫專案或任何程式碼被拆分的情況，這是必備功能。它讓 Gemini CLI 的行為更像一個已經開啟整個解決方案的 IDE。作為進階使用者，這意味著你專案的任何部分都不會超出 AI 的觸及範圍。
+
+## 技巧 14：用 AI 協助整理與清理檔案
+
+**快速應用場景：** 厭倦了雜亂的 `Downloads` 資料夾或組織不良的專案資產嗎？你可以徵召 Gemini CLI 作為智慧整理器。透過提供目錄概覽，它可以分類檔案，甚至將它們移動到子資料夾中（經你核准）。例如，「清理我的 `Downloads`：將圖片移到 `Images` 資料夾，PDF 移到 `Documents`，並刪除臨時檔案。」
+
+因為 Gemini CLI 可以讀取檔案名稱、大小，甚至查看檔案內容，它可以對檔案[整理](https://github.com/google-gemini/gemini-cli/discussions/7890#:~:text=We%20built%20a%20CLI%20tool,trash%20folder%20for%20manual%20deletion)做出明智的決策。一個社群建立的工具稱為 **「Janitor AI」** 展示了這點：它透過 Gemini CLI 執行，將檔案分類為重要 vs 垃圾，並[相應地](https://github.com/google-gemini/gemini-cli/discussions/7890#:~:text=We%20built%20a%20CLI%20tool,trash%20folder%20for%20manual%20deletion)分組。這個過程涉及掃描目錄，使用 Gemini 對檔案名和元資料（如果需要還有內容）的推理，然後將檔案移動到類別中。值得注意的是，它不會自動刪除垃圾 - 而是將它們移到 `Trash` 資料夾供[審查](https://github.com/google-gemini/gemini-cli/discussions/7890#:~:text=organize%20files,trash%20folder%20for%20manual%20deletion)。
+
+以下是你如何用 Gemini CLI 手動複製這樣的工作流程：
+
+1. **調查目錄：** 使用提示詞讓 Gemini 列出和分類。例如：
+
+```bash
+列出目前目錄中的所有檔案，並將它們分類為「圖片」、「影片」、「文件」、「壓縮檔」或「其他」。
+```
+
+Gemini 可能會使用 `!ls` 或類似工具取得檔案列表，然後分析名稱/副檔名來產生類別。
+
+2. **計劃整理：** 詢問 Gemini 它會如何重新組織。例如：
+
+```bash
+為這些檔案提出新的資料夾結構。我想按類型分開（圖片、影片、文件等）。同時識別任何看起來重複或不必要的檔案。
+```
+
+AI 可能會回應一個計劃：例如，*「建立資料夾：`Images/`、`Videos/`、`Documents/`、`Archives/`。將 `X.png`、`Y.jpg` 移到 `Images/`；將 `A.mp4` 移到 `Videos/`；等等。檔案 `temp.txt` 看起來不必要（可能是臨時檔案）。」*
+
+3. **透過確認執行移動：** 接著你可以指示它執行計劃。它可能會對每個檔案使用像 `mv` 這樣的 shell 指令。因為這會修改你的檔案系統，你會得到每個的確認提示（除非你 YOLO 它）。仔細核准移動。完成後，你的目錄會按建議整齊組織。
+
+在整個過程中，Gemini 的自然語言理解是關鍵。它可以推理，例如，`IMG_001.png` 是圖片或 `presentation.pdf` 是文件，即使沒有明確說明。它甚至可以開啟圖片（使用其視覺能力）來看裡面是什麼 - 例如，區分截圖 vs 照片 vs 圖示 - 並[相應地](https://dev.to/therealmrmumba/7-insane-gemini-cli-tips-that-will-make-you-a-superhuman-developer-2d7h#:~:text=If%20your%20project%20folder%20is,using%20relevant%20and%20descriptive%20terms)命名或排序它。
+
+**按內容重新命名檔案：** 一個特別神奇的用途是讓 Gemini 根據內容重新命名檔案。Dev Community 文章「7 個瘋狂的 Gemini CLI 技巧」描述了 Gemini 如何**掃描圖片並根據其[內容](https://dev.to/therealmrmumba/7-insane-gemini-cli-tips-that-will-make-you-a-superhuman-developer-2d7h#:~:text=If%20your%20project%20folder%20is,using%20relevant%20and%20descriptive%20terms)自動重新命名**。例如，一個名為 `IMG_1234.jpg` 的檔案，如果 AI 看到它是登入畫面的截圖，可能會被重新命名為 `login_screen.jpg`。要做到這點，你可以提示：
+
+```bash
+對於這裡的每個 .png 圖片，查看其內容並將其重新命名為描述性名稱。
+```
+
+Gemini 會開啟每個圖片（透過視覺工具），取得描述，然後提出像 `mv IMG_1234.png login_screen.png` 這樣的[動作](https://dev.to/therealmrmumba/7-insane-gemini-cli-tips-that-will-make-you-a-superhuman-developer-2d7h#:~:text=If%20your%20project%20folder%20is,using%20relevant%20and%20descriptive%20terms)。這可以大幅改善資產的組織，特別是在設計或照片資料夾中。
+
+**兩階段方法：** Janitor AI 討論注意到一個兩步驟過程：首先廣泛分類（重要 vs 垃圾 vs 其他），然後精煉[分組](https://github.com/google-gemini/gemini-cli/discussions/7890#:~:text=organize%20files,trash%20folder%20for%20manual%20deletion)。你可以模仿這個：首先分開可能可以刪除的檔案（也許是大的安裝程式 `.dmg` 檔案或重複檔案）和要保留的。然後專注於整理要保留的。總是仔細檢查 AI 標記為垃圾的東西；它的猜測可能不總是正確，所以需要人工監督。
+
+**安全提示：** 當讓 AI 處理檔案移動或刪除時，要有備份或至少準備好復原（用 `/restore` 或你自己的備份）。明智的做法是做一次試運行：要求 Gemini 印出它*會*執行的指令來整理，但不實際執行它們，這樣你可以審查。例如：「列出這個計劃所需的 `mv` 和 `mkdir` 指令，但還不要執行它們。」一旦你審查了列表，你可以複製貼上執行它們，或指示 Gemini 繼續。
+
+這是使用 Gemini CLI 進行「非明顯」任務的主要例子 - 它不只是寫程式碼，而是用 **AI 智慧進行系統整理**。它可以節省時間並為混亂帶來一點秩序。畢竟，作為開發者，我們會累積雜亂（日誌、舊腳本、下載），而 AI 清潔工可能相當方便。
+
+## 技巧 15：壓縮長對話以保持在上下文範圍內
+
+**快速應用場景：** 如果你與 Gemini CLI 對話了很長時間，你可能會達到模型的上下文長度限制，或只是發現對話階段變得笨重。使用 `/compress` 指令來摘要到目前為止的對話，用簡潔的[摘要](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Command%20Description%20,files)取代完整歷史。這為更多討論騰出空間，而不用從頭開始。
+
+大型語言模型有固定的上下文視窗（Gemini 2.5 Pro 的非常大，但不是無限的）。如果你超過它，模型可能會開始忘記早期訊息或失去連貫性。`/compress` 功能本質上是你對話階段的 **AI 生成的 tl;dr**，保留重要點。
+
+**運作原理：** 當你輸入 `/compress` 時，Gemini CLI 會取得整個對話（除了系統上下文）並產生摘要。然後它用該摘要作為單一系統或助手訊息取代對話歷史，保留重要細節但丟棄逐分鐘的對話。它會指示壓縮已發生。例如，在 `/compress` 之後，你可能會看到類似：
+
+```
+--- 對話已壓縮 ---
+討論摘要：使用者和助手一直在除錯應用程式中的記憶體洩漏。關鍵點：問題可能在 `DataProcessor.js` 中，物件沒有被釋放。助手建議新增日誌記錄並識別了可能的無限迴圈。使用者即將測試修復。
+--- 摘要結束 ---
+```
+
+從那時起，模型只有該摘要（加上新訊息）作為之前發生事情的上下文。如果摘要捕捉到了重要資訊，這通常就足夠了。
+
+**何時壓縮：** 理想情況下在你*達到*限制之前。如果你注意到對話階段變得冗長（數百回合或大量上下文中的程式碼），主動壓縮。速查表提到自動壓縮設定（例如，當上下文超過[最大值](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=%22includeDirectories%22%3A%20%5B%22..%2Fshared,98C379%22%2C%20%22AccentYellow)的 60% 時壓縮）。如果你啟用它，Gemini 可能會自動壓縮並讓你知道。否則，手動 `/compress` 在你的工具箱中。
+
+**壓縮後：** 你可以正常繼續對話。如果需要，你可以在非常長的對話階段中多次壓縮。每次，你會失去一些細緻度，所以不要沒有原因就頻繁壓縮 - 你可能會得到一個對複雜討論過度簡短的記憶。但通常模型自己的摘要在保留關鍵事實方面相當好（你總是可以自己重申任何關鍵的東西）。
+
+**上下文視窗範例：** 讓我們說明一下。假設你透過參考許多檔案輸入了一個大型程式碼庫，並有 1M token 的上下文（最大值）。如果你接著想要轉移到專案的不同部分，而不是開始新對話階段（失去所有那些理解），你可以壓縮。摘要會濃縮從程式碼中獲得的知識（像「我們載入了模組 A、B、C。A 有這些函數... B 以這些方式與 C 互動...」）。現在你可以繼續詢問新事物，那些知識以抽象方式保留。
+
+**記憶 vs 壓縮：** 注意壓縮不會儲存到長期記憶，它是對話的本地操作。如果你有*永遠*不想失去的事實，考慮技巧 4（新增到 `/memory`）- 因為記憶條目會在壓縮中倖存（它們反正會被重新插入，因為它們在 `GEMINI.md` 上下文中）。壓縮更多關於短暫的對話內容。
+
+**小警告：** 壓縮後，AI 的風格可能會稍微改變，因為它實際上看到的是帶有摘要的「新鮮」對話。它可能會重新介紹自己或改變語氣。你可以像「從這裡繼續...（我們壓縮了）」這樣指示它，使其順暢。實際上，它通常會繼續得很好。
+
+總結來說（雙關語），**當對話階段變長時使用 `/compress`**，以維持效能和相關性。它幫助 Gemini CLI 專注於更大的圖景，而不是對話歷史的每個細節。這樣，你可以進行馬拉松式的除錯對話階段或廣泛的設計討論，而不會用完 AI 正在寫作的「心智紙張」。
+
+## 技巧 16：使用 `!` 直通 Shell 指令（與終端機對話）
+
+**快速應用場景：** 在 Gemini CLI 對話階段的任何時候，你可以透過在前面加上 `!` 來執行實際的 shell 指令。例如，如果你想檢查 git 狀態，只需輸入 `!git status`，它會在你的[終端機](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Run%20a%20single%20command%3A)中執行。這讓你不用切換視窗或上下文 - 你仍在 Gemini CLI 中，但實際上是在告訴它「讓我快速執行這個指令」。
+
+這個技巧是關於 Gemini CLI 中的 **Shell 模式**。有兩種使用方式：
+
+* **單一指令：** 只需在提示詞開頭加上 `!`，後面接任何指令和參數。這會在目前工作目錄執行該指令，並[即時](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Run%20shell%20commands%20directly%20in,the%20CLI)顯示輸出。例如：
+
+```bash
+!ls -lh src/
+```
+
+會列出 `src` 目錄中的檔案，輸出看起來就像在正常終端機中一樣。輸出後，Gemini 提示符號回來，讓你可以繼續對話或發出更多指令。
+
+* **持久 shell 模式：** 如果你單獨輸入 `!` 並按 Enter，Gemini CLI 會切換到一個子模式，你會得到一個 shell 提示符號（通常看起來像 `shell>` 或[類似](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=)）。現在你可以互動式地輸入多個 shell 指令。這基本上是 CLI 內的迷你 shell。你透過在空行上再次輸入 `!`（或 `exit`）來退出這個模式。例如：
+
+```bash
+!
+shell> pwd
+/home/alice/project
+shell> python --version
+Python 3.x.x
+shell> !
+```
+
+最後的 `!` 後，你回到正常的 Gemini 提示符號。
+
+**為什麼有用？** 因為開發是動作和詢問的混合。你可能正在與 AI 討論某事，然後意識到需要編譯程式碼或執行測試來看某些東西。不用離開對話，你可以快速做到並將結果反饋到對話中。實際上，Gemini CLI 通常會為你做這個，作為其工具使用的一部分（例如，當你要求修復測試時，它可能會自動執行 `!pytest`）。但作為使用者，你也有完整的控制權可以手動做。
+
+**範例：**
+
+* 在 Gemini 建議程式碼中的修復後，你可以執行 `!npm run build` 來看它是否編譯，然後複製任何錯誤並要求 Gemini 協助處理那些錯誤。
+
+* 如果你想在 `vim` 或 `nano` 中開啟檔案，你甚至可以透過 `!nano filename` 啟動它（雖然注意因為 Gemini CLI 有自己的介面，在裡面使用互動式編輯器可能有點尷尬 - 最好使用內建的編輯器整合或複製到你的編輯器）。
+
+* 你可以使用 shell 指令為 AI 收集資訊：例如，`!grep TODO -R .` 來找到專案中的所有 TODO，然後你可能會要求 Gemini 協助處理那些 TODO。
+
+* 或者簡單地用於環境任務：如果需要，`!pip install some-package` 等，而不離開 CLI。
+
+**無縫互動：** 一個很酷的方面是對話如何參考輸出。例如，你可以執行 `!curl http://example.com` 來擷取一些資料，看到輸出，然後立即對 Gemini 說，「將上面的輸出格式化為 JSON」- 因為輸出在對話中被印出，AI 在上下文中有它來處理（前提是它不是太大）。
+
+**預設為 shell 的終端機：** 如果你發現自己總是在指令前加 `!`，你實際上可以透過啟動時使用特定工具模式來讓 shell 模式持久化（有一個預設工具的概念）。但更容易的是：如果你計劃執行很多手動指令，在對話階段開始時就進入 shell 模式（什麼都不帶的 `!`），只在想問問題時偶爾才退出。然後你可以在想問問題時退出 shell 模式。這幾乎像是把 Gemini CLI 變成你的正常終端機，只是剛好有個 AI 隨時可用。
+
+**與 AI 計劃整合：** 有時 Gemini CLI 本身會提議執行 shell 指令。如果你核准，它實際上做的事情與 `!command` 相同。理解這點，你知道你總是可以介入。如果 Gemini 卡住了或你想嘗試某些東西，你不用等它建議 - 你可以直接做然後繼續。
+
+總之，`!` **直通**意味著*你不必為了 shell 任務而離開 Gemini CLI*。它崩解了與 AI 對話和在系統上執行指令之間的界限。作為進階使用者，這對效率很棒 - 你的 AI 和你的終端機成為一個連續的環境。
+
+## 技巧 17：把每個 CLI 工具都當作潛在的 Gemini 工具
+
+**快速應用場景：** 意識到 Gemini CLI 可以利用你系統上安裝的**任何**命令列工具作為其問題解決的一部分。AI 有 shell 的存取權，所以如果你有 `cURL`、`ImageMagick`、`git`、`Docker` 或任何其他工具，Gemini 可以在適當時呼叫它。換句話說，*你的整個 `$PATH` 就是 AI 的工具箱*。這大大擴展了它能做的事 - 遠超過其內建工具。
+
+例如，假設你問：「將這個資料夾中的所有 PNG 圖片轉換為 WebP 格式。」如果你安裝了 ImageMagick 的 `convert` 工具，Gemini CLI 可能會規劃類似：對每個[檔案](https://genmind.ch/posts/Howto-Supercharge-Your-Terminal-with-Gemini-CLI/#:~:text=%3E%20%21for%20f%20in%20,png%7D.webp%22%3B%20done)使用 shell 迴圈配合 `convert` 指令。確實，早期部落格的一個範例展示了這個，使用者提示批次轉換圖片，Gemini 用 `convert` [工具](https://genmind.ch/posts/Howto-Supercharge-Your-Terminal-with-Gemini-CLI/#:~:text=)執行了一個 shell 單行指令。
+
+另一種情境：「將我的應用程式部署到 Docker。」如果有 `Docker CLI`，AI 可以根據需要呼叫 `docker build` 和 `docker run` 步驟。或「使用 FFmpeg 從 `video.mp4` 擷取音訊」- 它可以建構 `ffmpeg` 指令。
+
+這個技巧是關於心態：**Gemini 不限於編碼到其中的東西**（這已經很廣泛了）。它可以找出如何使用其他可用的程式來達成[目標](https://medium.com/google-cloud/gemini-cli-tutorial-series-part-4-built-in-tools-c591befa59ba#:~:text=In%20this%20part%2C%20we%20looked,In%20the%20next%20part%2C%20we)。它知道常見的語法，如果需要可以閱讀說明文字（它可以在工具上呼叫 `--help`）。唯一的限制是安全性：預設情況下，它會對任何它想出的 `run_shell_command` 要求確認。但當你變得舒適時，你可能會自動允許某些良性指令（參見 YOLO 或允許的工具設定）。
+
+**注意環境：** 「能力越大，責任越大。」因為每個 shell 工具都是公平遊戲，你應該確保你的 `$PATH` 不包括任何你不希望 AI 無意中執行的東西。這就是技巧 19（自訂 PATH）發揮作用的地方 - 有些使用者為 Gemini 建立受限的 `$PATH`，這樣它就不能，比如說，直接呼叫系統破壞性指令，或許不會遞迴地呼叫 `gemini`（以避免迴圈）。重點是，預設情況下如果 `gcc` 或 `terraform` 或任何東西在 `$PATH` 中，Gemini 可以呼叫它。這不意味著它會隨機這樣做 - 只有在任務需要時 - 但這是可能的。
+
+**思考鏈範例：** 想像你問 Gemini CLI：「設定一個提供目前目錄的基本 HTTP 伺服器。」AI 可能會想：「我可以用 Python 的內建伺服器來做這個。」然後它發出 `!python3 -m http.server 8000`。現在它剛剛使用了系統工具（Python）來啟動伺服器。這是個無害的例子。另一個：「檢查這個 Linux 系統的記憶體使用情況。」AI 可能會使用 `free -h` 指令或從 `/proc/meminfo` 讀取。它實際上在做系統管理員會做的事，透過使用可用指令。
+
+**所有工具都是 AI 的擴充：** 這有點未來派，但考慮到任何命令列程式都可以被視為 AI 可以呼叫來擴充其能力的「函數」。需要解數學問題？它可以呼叫 `bc`（計算機）。需要操作圖片？它可以呼叫圖片處理工具。需要查詢資料庫？如果 CLI 客戶端已安裝且有憑證，它可以使用它。可能性是廣闊的。在其他 AI 代理框架中，這被稱為工具使用，Gemini CLI 被設計為對其代理決定正確[工具](https://cloud.google.com/blog/topics/developers-practitioners/agent-factory-recap-deep-dive-into-gemini-cli-with-taylor-mullen#:~:text=The%20Gemini%20CLI%20%20is,understanding%20of%20the%20developer%20workflow)有很大的信任。
+
+**當它出錯時：** 另一面是如果 AI 誤解了工具或對工具有幻覺。它可能會嘗試呼叫不存在的指令，或使用錯誤的旗標，導致錯誤。這不是大問題 - 你會看到錯誤並可以糾正或澄清。實際上，Gemini CLI 的系統提示詞可能會引導它先做試運行（只是提出指令）而不是盲目執行。所以你通常有機會抓住這些。隨著時間推移，開發者正在改進工具選擇邏輯以減少這些失誤。
+
+主要要點是**把 Gemini CLI 想成有非常大的瑞士刀** - 不只是內建的刀片，還有你 OS 中的每個工具。你不用指示它如何使用它們（如果是標準的東西）；通常它知道或可以找出來。這顯著放大了你能完成的事情。這就像有個知道如何執行你安裝的幾乎任何程式的初階開發者或 devops 工程師。
+
+作為進階使用者，你甚至可以專門安裝額外的 CLI 工具來給 Gemini 更多能力。例如，如果你安裝雲端服務的 CLI（AWS CLI、GCloud CLI 等），理論上 Gemini 可以利用它來管理雲端資源（如果被提示這樣做）。總是確保你理解並信任執行的指令，特別是對於強大的工具（你不會想讓它意外地啟動巨大的雲端實例）。但明智地使用，這個概念 - **一切都是 Gemini 工具** - 是讓它在你將它整合到環境中時*指數級*更有能力的原因。
+
+## 技巧 18：善用多模態 AI - 讓 Gemini 看見圖片等內容
+
+**快速應用場景：** Gemini CLI 不限於文字 - 它是多模態的。這意味著它可以分析圖片、圖表，甚至如果給定的話可以分析 PDF。善用這個。例如，你可以說「這是一個錯誤對話框的截圖，`@./error.png` - 幫我疑難排解。」AI 會「看到」圖片並相應回應。
+
+Google 的 Gemini 模型（及其前身 PaLM2 的 Codey 形式）的一個突出功能是圖片理解。在 Gemini CLI 中，如果你用 `@` 參考圖片，模型會收到圖片資料。它可以輸出描述、分類，或對圖片內容進行推理。我們已經討論了按內容重新命名圖片（技巧 14）和描述截圖（技巧 7）。但讓我們考慮其他創意用途：
+
+* **UI/UX 回饋：** 如果你是與設計師合作的開發者，你可以放入 UI 圖片並要求 Gemini 提供回饋或生成程式碼。「看看這個 UI 模擬圖 `@mockup.png` 並為它生成 React 元件結構。」它可以識別圖片中的元素（標題、按鈕等）並概述程式碼。
+
+* **整理圖片：** 除了重新命名，你可能有混合圖片的資料夾並想按內容排序。「將 `./photos/` 中的圖片按主題（例如日落、山脈、人物）排序到子資料夾中。」AI 可以查看每張照片並分類（這類似於一些照片應用程式用 AI 做的 - 現在你可以透過 Gemini 用自己的腳本做到）。
+
+* **OCR 和資料擷取：** 如果你有錯誤文字的截圖或文件的照片，Gemini 通常可以從中讀取文字。例如，「從 `invoice.png` 擷取文字並將其放入結構化格式。」如 Google Cloud 部落格範例所示，Gemini CLI 可以處理一組發票圖片並輸出它們[資訊](https://medium.com/google-cloud/gemini-cli-tutorial-series-part-4-built-in-tools-c591befa59ba#:~:text=Press%20enter%20or%20click%20to,view%20image%20in%20full%20size)的表格。它基本上做了 OCR + 理解來從圖片中獲得發票號碼、日期、金額。這是個進階用例，但用底層的多模態模型完全可行。
+
+* **理解圖表或圖表：** 如果你有圖表截圖，你可以問「解釋這個圖表的關鍵洞察 `@chart.png`。」它可能會解釋軸和趨勢。準確性可能有所不同，但值得一試。
+
+為了讓這個實用：當你 `@image.png` 時，確保圖片不是太大（雖然模型可以處理相當大的圖片）。CLI 可能會編碼它並發送給模型。回應可能包括描述或進一步動作。你也可以在一個提示詞中混合文字和圖片參考。
+
+**非圖片模態：** CLI 和模型可能也可以透過轉換工具處理 PDF 和音訊。例如，如果你 `@report.pdf`，Gemini CLI 可能會在底層使用 PDF 轉文字工具來擷取文字然後摘要。如果你 `@audio.mp3` 並要求轉錄，它可能會使用音訊轉文字工具（像語音辨識函數）。速查表建議參考 PDF、音訊、視訊檔案是[支援的](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Reference%20files%20or%20directories%20in,PDFs%2C%20audio%2C%20and%20video%20files)，大概是透過呼叫適當的內部工具或 API。所以，「轉錄這個訪談音訊：`@interview.wav`」實際上可能會工作（如果現在沒有，很可能很快會，因為底層的 Google 語音轉文字 API 可以被插入）。
+
+**豐富輸出：** 多模態也意味著如果整合的話，AI 可以在回應中返回圖片（雖然在 CLI 中它通常不會*直接顯示*它們，但它可以儲存圖片檔案或輸出 ASCII 藝術等）。MCP 功能提到工具可以返回[圖片](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=Capabilities%3A)。例如，AI 繪圖工具可以生成圖片，Gemini CLI 可以呈現它（也許透過開啟它或給連結）。
+
+**重要：** CLI 本身是基於文字的，所以你不會在終端機中*看到*圖片（除非它能做 ASCII 預覽）。你只會得到分析。所以這主要是關於讀取圖片，而不是顯示它們。如果你在 VS Code 整合中，它可能會在對話視圖中顯示圖片。
+
+總之，**使用 Gemini CLI 時不要忘記 GUI 中的「I」** - 它可以在許多情況下處理視覺的東西，就像處理文字一樣好。這開啟了像視覺除錯、設計協助、從截圖擷取資料等工作流程，全都在同一個工具下。這是一些其他 CLI 工具可能還沒有的差異點。隨著模型改進，這種多模態支援只會變得更強大，所以這是個要利用的未來導向技能。
+
+## 技巧 19：自訂 `$PATH`（與工具可用性）以提升穩定性
+
+**快速應用場景：** 如果你發現 Gemini CLI 變得混亂或呼叫錯誤的程式，考慮用調整過的 `$PATH` 執行它。透過限制或排序可用的執行檔，你可以防止 AI，比如說，呼叫一個你不打算的類似名稱的腳本。本質上，你沙盒化它的工具存取到已知良好的工具。
+
+對大多數使用者來說，這不是問題，但對於擁有大量自訂腳本或多個工具版本的進階使用者，這可能很有幫助。開發者提到的一個原因是避免無限迴圈或奇怪的[行為](https://github.com/google-gemini/gemini-cli/discussions/7890#:~:text=We%20built%20a%20CLI%20tool,trash%20folder%20for%20manual%20deletion)。例如，如果 `gemini` 本身在 `$PATH` 中，一個走錯路的 AI 可能會遞迴地從 Gemini 內部呼叫 `gemini`（一個奇怪的情境，但理論上可能）。或許你有個名為 `test` 的指令與某些東西衝突 - AI 可能會呼叫錯誤的那個。
+
+**如何為 Gemini 設定 PATH：** 最簡單的是在啟動時即時設定：
+
+```bash
+PATH=/usr/bin:/usr/local/bin gemini
+```
+
+這用只有那些目錄的受限 `$PATH` 執行 Gemini CLI。你可能會排除實驗性或危險腳本所在的目錄。或者，建立一個小的 shell 腳本包裝器來清除或調整 `$PATH`，然後執行 `gemini`。
+
+另一種方法是使用環境或設定來明確禁用某些工具。例如，如果你絕對不希望 AI 使用 `rm` 或某個破壞性工具，你技術上可以在安全的 `$PATH` 中建立別名或虛擬 `rm`，什麼都不做（雖然這可能會干擾正常操作，所以也許不是那個）。更好的方法是設定中的**排除列表**。在擴充或 `settings.json` 中，你可以排除工具[名稱](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=)。例如，
+
+```json
+"excludeTools": ["run_shell_command"]
+```
+
+這個極端的例子會阻止*所有* shell 指令執行（讓 Gemini 實際上只讀）。更細緻的，之前提到過允許跳過某些確認；類似地，你可能會配置像這樣的東西：
+
+```json
+"tools": {
+  "exclude": ["apt-get", "shutdown"]
+}
+```
+
+*（這個語法是說明性的；查閱文件以了解確切用法。）*
+
+原則是，透過控制環境，你減少 AI 用工具做蠢事的風險。這類似於為房子做兒童防護。
+
+**防止無限迴圈：** 一個使用者情境是 Gemini 不斷讀取自己的輸出或重複[讀取](https://support.google.com/gemini/thread/337650803/infinite-loops-with-tool-code-in-answers?hl=en#:~:text=Community%20support,screen%20with%20weird%20scrolling)檔案的迴圈。自訂 `$PATH` 不能直接修復邏輯迴圈，但一個原因可能是如果 AI 呼叫了觸發自己的指令。確保它不能意外地產生另一個 AI 實例（像呼叫 `bard` 或 `gemini` 指令，如果它想這樣做）是好的。從 `$PATH` 移除那些（或在該對話階段重新命名它們）有幫助。
+
+**透過沙盒隔離：** 另一個替代搞亂 `$PATH` 的方法是使用 `--sandbox` 模式（它使用 Docker 或 Podman 在隔離[環境](https://www.philschmid.de/gemini-cli-cheatsheet#:~:text=echo%20,gemini)中執行工具）。在那種情況下，AI 的動作是被包含的，只有沙盒映像提供的工具。你可以提供一個有精選工具集的 Docker 映像。這很重手但非常安全。
+
+**特定任務的自訂 PATH：** 你可能對不同專案有不同的 `$PATH` 設定。例如，在一個專案中你想要它使用特定版本的 Node 或本地工具鏈。用指向那些版本的 `$PATH` 啟動 `gemini` 會確保 AI 使用正確的那個。本質上，把 Gemini CLI 當作任何使用者 - 它使用你給它的任何環境。所以如果你需要它選擇 `gcc-10` vs `gcc-12`，相應地調整 `$PATH` 或 `CC` 環境變數。
+
+**總結：** *護欄*。作為進階使用者，你有能力微調 AI 的操作條件。如果你發現與工具使用相關的不良行為模式，調整 `$PATH` 是快速補救。對於日常使用，你可能不需要這個，但如果你將 Gemini CLI 整合到自動化或 CI 中，這是個要記住的專業技巧：給它一個受控的環境。這樣，你確切地知道它能和不能做什麼，這增加了可靠性。
+
+---
+
+## 技巧 20：透過 token 快取與統計追蹤並減少 token 消耗
+
+如果你執行長時間對話或重複附加相同的大檔案，你可以透過開啟 token 快取和監控使用情況來削減成本和延遲。使用 API 金鑰或 Vertex AI 驗證，Gemini CLI 會自動重用先前發送的系統指示和上下文，所以後續請求更便宜。你可以在 CLI 中即時看到節省。
+
+**如何使用**
+
+使用啟用快取的驗證模式。當你用 Gemini API 金鑰或 Vertex AI 驗證時，Token 快取可用。它目前不適用於 OAuth 登入。[Google Gemini](https://google-gemini.github.io/gemini-cli/docs/cli/token-caching.html)
+
+檢查你的使用情況和快取命中。在對話階段中執行 `stats` 指令。當快取啟用時，它會顯示總 token 和 `cached` 欄位。
+
+```bash
+/stats
+```
+
+指令的描述和快取報告行為記錄在指令參考和 FAQ 中。[Google Gemini+1](https://google-gemini.github.io/gemini-cli/docs/cli/commands.html?utm_source=chatgpt.com)
+
+在腳本中捕獲指標。無頭執行時，輸出 JSON 並解析 `stats` 區塊，其中包含每個模型的 `tokens.cached`：
+
+```bash
+gemini -p "Summarize README" --output-format json
+```
+
+無頭指南記錄了包含快取 token 計數的 JSON 架構。[Google Gemini](https://google-gemini.github.io/gemini-cli/docs/cli/headless.html)
+
+將對話階段摘要儲存到檔案：對於 CI 或預算追蹤，將 JSON 對話階段摘要寫入磁碟。
+
+```bash
+gemini -p "Analyze logs" --session-summary usage.json
+```
+
+這個旗標列在更新日誌中。[Google Gemini](https://google-gemini.github.io/gemini-cli/docs/changelogs/)
+
+使用 API 金鑰或 Vertex 驗證，CLI 會自動重用先前發送的上下文，所以後來的回合發送更少的 token。保持 `GEMINI.md` 和大型檔案參考在回合之間穩定會增加快取命中率；你會在統計中看到這反映為快取的 token。
+
